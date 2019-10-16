@@ -1,0 +1,298 @@
+<mat-card>
+  <mat-card-header>
+    <div fxLayout="row wrap" *ngIf="!editFlag" class="w80">
+      <h4 class="wrap-word">{{'alertModule.create.addAlert'| translate}}</h4>
+    </div>
+    <div fxLayout="row wrap" *ngIf="editFlag" class="w80">
+      <h4 class="wrap-word">{{'alertModule.create.editAlert'| translate}}</h4>
+    </div>
+      <button mat-icon-button [mat-dialog-close] style="position: absolute; right: 1%; "><i
+          class="ti-close"></i></button>
+  </mat-card-header>
+  <mat-card-content class="pad-all2">
+    <mat-vertical-stepper [linear]="true" #stepper>
+      <mat-step [stepControl]="alertForm">
+        <form [formGroup]="alertForm">
+          <div fxLayout="row wrap" class="mar-btm">
+            <ng-template matStepLabel>{{'alertModule.create.primaryInformation'| translate}}</ng-template>
+            <div *ngIf="!_editData">
+              <mat-radio-group formControlName="selectTime">
+                <mat-radio-button [checked]=true value="0">{{'alertModule.create.totalwaitingtime'| translate}}
+                </mat-radio-button>&nbsp;&nbsp;
+                <mat-radio-button value="1">{{'alertModule.create.totalcaretime'| translate}}</mat-radio-button>
+              </mat-radio-group>
+            </div>
+
+
+            <mat-form-field style="width: 95%; float: left">
+              <input matInput [readonly]="_editData" autocomplete="off"
+                placeholder="{{ 'alertModule.create.alertName' | translate}}" formControlName="AlertName"
+                allow-Service-English1
+                (change)="!alertForm.controls.AlertName.errors?.required && alertForm.controls.AlertName.valid ?
+              alertForm.get('validateServiceAlertName').setValue(alertForm.value.AlertName): alertForm.get('validateServiceAlertName').setValue(null)"
+                maxlength="20" minlength="5" required>
+              <mat-error *ngIf="alertForm.controls.AlertName.errors?.required">
+                {{'alertModule.create.enterAlertName'| translate}}
+              </mat-error>
+              <mat-error *ngIf="alertForm.controls.AlertName.errors?.minlength">
+                {{ 'ActionNames.minLengthError5' | translate}}</mat-error>
+
+            </mat-form-field>
+
+            <mat-error *ngIf="_editData==null && !alertForm.controls.validateServiceAlertName.errors?.required &&
+              !alertForm.controls.AlertName.errors?.required &&
+              !alertForm.controls.validateServiceAlertName.errors?.invalid" style="padding-top: 10px;">
+              <i class=" ti-check text-success"></i>
+            </mat-error>
+            <mat-error *ngIf="_editData==null && alertForm.controls.validateServiceAlertName.errors?.invalid">
+              <i class="ti-close text-danger">
+                <small style="font-family: Arial, Helvetica,
+                  sans-serif;">{{ 'alertModule.create.alertNameAlreadyExists' | translate}}</small>
+              </i>
+            </mat-error>
+
+            <mat-form-field style="width: 100%">
+              <mat-select placeholder="{{'alertModule.create.selectFloor'| translate}}" formControlName="floor"
+                (selectionChange)="floorSelection()" required>
+                <mat-optgroup *ngFor="let building of buildingData" label="{{building.buildName}}">
+                  <mat-option *ngFor="let level of building.floordata" [value]="level">
+                    {{level.floorName}}
+                  </mat-option>
+                </mat-optgroup>
+              </mat-select>
+              <mat-error *ngIf="alertForm.controls.floor.errors?.required">{{'alertModule.create.reqFloor'| translate}}
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field style="width: 100%">
+              <mat-select placeholder="{{'alertModule.create.selectDepartment'| translate}}"
+                formControlName="department" (selectionChange)="deptSelection($event.value,true)" required>
+                <mat-option *ngFor="let department of totalDepartments" [value]="department.deptId">
+                  {{department?.deptName}}</mat-option>
+              </mat-select>
+              <mat-error *ngIf="alertForm.controls.department.errors?.required">
+                {{'alertModule.create.reqDept'| translate}}</mat-error>
+            </mat-form-field>
+
+            <mat-form-field style="width: 100%">
+              <mat-select placeholder="{{'alertModule.create.selectService'| translate}}" formControlName="service"
+                (selectionChange)="selectedService($event.value)" required multiple>
+                <mat-select-trigger> 
+                  {{servicename}}
+                  <span *ngIf="(alertForm?.value.service)?.length>
+              1" class="example-additional-selection">
+                    {{((alertForm?.value.service)?.length-1>0)?'(+'+((alertForm?.value.service)?.length - 1) +' others)':''}}
+                  </span>
+                </mat-select-trigger>
+                <mat-option *ngFor="let services of totalServices" #allServiceSelected [value]="services">
+                  {{services?.serviceEngName}}</mat-option>
+              </mat-select>
+              <mat-error *ngIf="alertForm.controls.service.errors?.required">
+                {{'alertModule.create.reqService'| translate}}</mat-error>
+            </mat-form-field>
+            <div style="width: 100%;">
+              <div style="width: 70%; float:left;">
+                <mat-form-field style="width: 100%; padding-right: 6px;">
+                  <mat-select placeholder="{{'alertModule.create.selectCustMsgField'| translate}}"
+                    formControlName="cmessage">
+                    <mat-option *ngFor="let paramnames of parametersNames" [value]="paramnames">
+                      {{paramnames}}</mat-option>
+                  </mat-select>
+                  <!-- <mat-error *ngIf="alertForm.controls.cmessage.errors?.required">{{'alertModule.create.reqCustField'| translate}}</mat-error> -->
+                </mat-form-field>
+              </div>
+              <div>
+                <label *ngIf="alertForm.value.cmessage != null" for="focus-input" type="button" class="btn btn-primary"
+                  (click)="addCustomField()">{{'alertModule.create.add'| translate}}</label>
+              </div>
+
+              <mat-form-field style="width: 100%; padding-right: 6px;">
+                <textarea matInput formControlName="msgtxt" #message class="typewriter" name="focus-input"
+                  placeholder="{{'ActionNames.'+msgPlaceHolder | translate}}" matTextareaAutosize matAutosizeMinRows="5"
+                  matAutosizeMaxRows="5" rows="5" maxlength="{{msglength}}"
+                  [ngClass]=" _arabic.test(alertForm.value.msgtxt) ? {arabic : true} : {english : true}" required>
+            </textarea>
+                <mat-hint align="end" style="color: green;font-weight: bold">{{charcount}}
+                  {{'alertModule.create.character' | translate}}(s) |
+                  {{msgCount}} {{'alertModule.create.msg' | translate}}(s)</mat-hint>
+                <mat-error *ngIf="alertForm.controls.msgtxt.errors?.required">{{'alertModule.create.reqMsg'| translate}}
+                </mat-error>
+              </mat-form-field>
+            </div>
+          </div>
+          <div>
+            <button matStepperNext mat-raised-button type="button"
+              class="submitbutton">{{'alertModule.create.next'| translate}}</button>
+          </div>
+        </form>
+      </mat-step>
+      <mat-step [stepControl]="escalationForm">
+        <form [formGroup]="escalationForm">
+          <ng-template matStepLabel>{{'alertModule.create.EsclationLevelInformation'| translate}}</ng-template>
+          <span>{{alertForm.value.selectTime=='0' ? ('alertModule.create.WaitingTime' | translate) : ('alertModule.create.CareTime' | translate)}}</span>
+          <fieldset class="scheduler-border-admin">
+            <legend class="scheduler-border"  style="cursor: pointer;" (click)="expandLegend('1')">{{'alertModule.create.createEsclationLevel'| translate}} : {{hideDestDetails?'[+]':'[-]'}}</legend>
+            <div *ngIf="!hideDestDetails">
+              <mat-form-field style="width: 100%">
+                <mat-select placeholder="{{'alertModule.create.lTimeValue'| translate}}" formControlName="lTimeValue"
+                  (selectionChange)="TimeSelection()" required>
+
+                  <mat-option *ngFor="let time of timeValues" [disabled]="time<=startTimeVal" value="{{time}}">{{time}}
+                  </mat-option>
+
+                </mat-select>
+                <mat-error *ngIf="escalationForm.controls.lTimeValue.errors?.required">
+                  {{'alertModule.create.reqlTimeValue'| translate}}
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field style="width: 100%">
+                <mat-select placeholder="{{'alertModule.create.gTimeValue'| translate}}" formControlName="gTimeValue"
+                  required>
+                  <!-- <ng-container *ngFor="let time of timeValues"> -->
+                  <mat-option *ngFor="let time of timeValues"
+                    [disabled]="time<=escalationForm.value.lTimeValue || time<=startTimeVal" value="{{time}}">{{time}}
+                  </mat-option>
+                  <!-- </ng-container> -->
+                </mat-select>
+                <mat-error *ngIf="escalationForm.controls.gTimeValue.errors?.required">
+                  {{'alertModule.create.reqgTimeValue'| translate}}e</mat-error>
+              </mat-form-field>
+              <fieldset class="scheduler-border-admin">
+                <legend class="scheduler-border" style="cursor: pointer;" (click)="expandLegend('2')">
+                  {{'alertModule.create.DestinationInfo' | translate}} {{hideDetails?'[+]':'[-]'}}</legend>
+                <div *ngIf="!hideDetails">
+
+                  <mat-form-field style="width: 100%; padding-right: 6px;">
+                    <input matInput allow-alpha-numeric-singlespace
+                      placeholder="{{'alertModule.create.enterName'| translate}}" formControlName="name" maxlength="20"
+                      minlength="5" required>
+                    <mat-error *ngIf="escalationForm.controls.name.errors?.required">
+                      {{ 'ActionNames.errorMessage' | translate}}
+                    </mat-error>
+                    <mat-error *ngIf="escalationForm.controls.name.errors?.minlength">
+                      {{ 'ActionNames.minLengthError5' | translate}}</mat-error>
+                  </mat-form-field>
+
+                  <mat-form-field style="width: 100%; padding-right: 6px;">
+                    <input matInput placeholder="{{'alertModule.create.emailId'| translate}}" allow-email-charecters
+                      formControlName="email" maxlength="25" (keyup)="emailValidation()">
+                  <mat-error *ngIf="escalationForm.controls.email.errors?.pattern">{{'alertModule.create.emailValid'| translate}}</mat-error>
+        
+                  </mat-form-field>
+
+                  <mat-form-field style="width: 100%; padding-right: 6px;">
+                    <input matInput allow-mobilenumber-nospace placeholder="{{'alertModule.create.mobile'| translate}}"
+                      formControlName="mobile" minlength="8" maxLength="15" required>
+                    <mat-error *ngIf="escalationForm.controls.mobile.errors?.required">
+                      {{ 'ActionNames.errorMessage' | translate}}
+                    </mat-error>
+                    <mat-error *ngIf="escalationForm.get('mobile').hasError('minlength')">
+                      {{'ActionNames.minLengthError8' | translate}}</mat-error>
+                  </mat-form-field>
+
+                <button mat-raised-button color="primary"
+                  [disabled]="escalationForm.value.name == null || escalationForm.value.mobile == null"
+                  (click)="addDetails(true)">{{'alertModule.create.addDetails'| translate}}</button>
+
+              </div>
+
+
+              <div *ngIf="alertslist.length>0" style="margin-top:20px;" class="full-width wrap-word">
+                <table class="table table-bordered full-width">
+                  <thead>
+                    <tr>
+                      <th class="tbl-c">{{'alertModule.create.enterName'| translate}}</th>
+                      <th class="tbl-c">{{'alertModule.create.emailId'| translate}}</th>
+                      <th class="tbl-c">{{'alertModule.create.mobile'| translate}}</th>
+                      <th class="tbl-c">{{'alertModule.create.action'| translate}}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let alert of alertslist;let i=index">
+                      <td class="tbl-c">
+                        {{alert.name}}
+                      </td>
+                      <td class="tbl-c">
+                        {{alert.emailId}}
+                      </td>
+                      <td class="tbl-c">
+                        {{alert.mobileNo}}
+                      </td>
+                        <td class="tbl-c " style="border:none;">
+                          <button mat-menu-item *ngIf="i==alertslist.length-1" (click)="deleteTableData(alert)"><i
+                              class="ti-trash"></i>&nbsp;
+                          </button>
+                        <!-- <i class="ti-close" *ngIf="i==alertslist.length-1" actionClick
+                          (click)="deleteTableData(alert)"></i>&nbsp; -->
+                        </td>
+                    </tr>
+                  </tbody>
+                </table>
+                </div>
+
+            </fieldset>
+            <button  *ngIf="!updateFlag"
+                [disabled]="alertslist.length==0 || escalationForm.value.gTimeValue == null || escalationForm.value.lTimeValue == null "
+                mat-raised-button color="primary"
+                (click)="addEsclation(true)">{{'alertModule.create.addEsclation'| translate}}</button>
+              <button *ngIf="updateFlag" mat-raised-button color="primary" (click)="updateEsclation(true)">{{'alertModule.create.updateEsclation' | translate}} - {{escName}}</button>
+            </div>
+          </fieldset>
+          <div style="border: 1px solid">
+            <strong>{{'alertModule.create.escalationData' | translate}}</strong>
+          <div *ngIf="esclationList.length>0" style="margin-top:20px;" class="full-width wrap-word">
+              <table class="table table-bordered full-width">
+                <tr >
+                  <th class="tbl-c">{{'alertModule.create.esclationLevelId'| translate}}</th>
+                  <th class="tbl-c">{{'alertModule.create.lTimeValue'| translate}}</th>
+                  <th class="tbl-c">{{'alertModule.create.gTimeValue'| translate}}</th>
+                  <th class="tbl-c">{{'alertModule.create.destinationDetails'| translate}}</th>
+                  <th class="tbl-c">{{'alertModule.create.action'| translate}}</th>
+                </tr>
+                <tr *ngFor="let esclation of esclationList;let i=index ">
+                  <td class="tbl-c">
+                    {{esclation.escalationType == 1?('alertModule.create.level1'| translate): (esclation.escalationType==2 ? ('alertModule.create.level2'| translate):('alertModule.create.level3'| translate))}}
+                  </td>
+                  <td class="tbl-c">{{esclation.ltValue}}</td>
+                  <td class="tbl-c">{{esclation.gtValue}}</td>
+                  <td class="tbl-c">
+                    <a
+                      (click)="tabledata(esclation.serviceAlertsDetails)">{{'alertModule.create.click' | translate}}</a>
+                  </td>
+                  <td class="tbl-c">
+
+                    <button mat-menu-item *ngIf="i==esclationList.length-1" (click)="deleteEscTableData(esclation)"><i
+                        class="ti-trash"></i>
+                      </button>
+                      <button  mat-menu-item (click)="editEsclation(esclation,i)"><i class="ti-pencil-alt"></i></button>
+                  
+
+                    <!-- <i class="ti-close" *ngIf="i==esclationList.length-1" 
+                      (click)="deleteEscTableData(alert)"></i>&nbsp; -->
+                  </td>
+
+                </tr>
+              </table>
+            </div>
+            <div>
+              <button mat-button matStepperPrevious>{{'alertModule.create.back'| translate}}</button>
+              <button mat-raised-button color="primary" (click)="createServiceAlert()"
+                [disabled]="esclationList.length == 0">
+                {{(_editData != null ?  'alertModule.create.update' :'alertModule.create.save') | translate}}</button>
+            </div>
+          </div>
+        
+
+
+        </form>
+      </mat-step>
+    </mat-vertical-stepper>
+  </mat-card-content>
+</mat-card>
+
+<div class="fullloader" *ngIf="loading">
+  <div class="fullloaderInner">
+    <img src="assets/images/loading.gif">
+  </div>
+</div>
